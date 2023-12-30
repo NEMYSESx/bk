@@ -9,8 +9,8 @@ class userControl {
   static userRegistration = async (req, res) => {
     const { name, email, password, confirmPassword, tc } = req.body;
     const user = await userModel.findOne({ email: email });
-    if (user) {
-      res.send({ status: "failed", message: "email already exist" });
+    if (user != null) {
+      res.send({ status: "error", message: "email already exist" });
     } else {
       if (name && email && password && confirmPassword && tc) {
         if (password === confirmPassword) {
@@ -34,7 +34,7 @@ class userControl {
               { expiresIn: "5d" }
             );
             res.send({
-              send: "success",
+              status: "success",
               message: "registration success",
               token: token,
             });
@@ -43,10 +43,10 @@ class userControl {
             res.send({ status: "error", message: "enable to register" });
           }
         } else {
-          res.send({ send: "failed", message: "password donot match" });
+          res.send({ status: "error", message: "password donot match" });
         }
       } else {
-        res.send({ status: "failed", message: "all fields required" });
+        res.send({ status: "error", message: "all fields required" });
       }
     }
   };
@@ -58,7 +58,7 @@ class userControl {
         const user = await userModel.findOne({ email: email });
         if (user != null) {
           const isMatch = await bcrypt.compare(password, user.password);
-          if (user.email === email && isMatch) {
+          if (isMatch) {
             //creating jwt token
             const token = jwt.sign(
               { userId: user._id },
@@ -66,17 +66,25 @@ class userControl {
               { expiresIn: "10d" }
             );
             res.send({
-              send: "success",
+              status: "success",
               message: "login success",
               token: token,
             });
           } else {
-            res.send({ send: "failed", message: "your credentials are wrong" });
+            res.send({
+              status: "error",
+              message: "your credentials are wrong",
+            });
           }
+        } else {
+          res.send({
+            status: "error",
+            message: "your credentials are wrong",
+          });
         }
       } else {
         res.send({
-          send: "failed",
+          status: "error",
           message: "please enter the required field",
         });
       }
@@ -120,7 +128,6 @@ class userControl {
           expiresIn: "15m",
         });
         const link = `http://localhost:3000/api/user/reset/${user._id}/${token}`; //this link will be sent to email and on clicking the link we get forwaded to the page where we can reset our password
-        console.log(link);
         let info = await transporter.sendMail({
           from: process.env.EMAIL_FROM,
           to: user.email,
